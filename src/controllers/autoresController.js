@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import NaoEncontrado from "../errors/NaoEncontrado.js";
 import autores from "../models/Autor.js";
 
 class AutorController {
@@ -14,7 +14,7 @@ class AutorController {
     }
   };
 
-  static listarAutorPorId = async (req, res) => {
+  static listarAutorPorId = async (req, res, next) => {
 
     try {
       const id = req.params.id;
@@ -24,20 +24,16 @@ class AutorController {
       if (autorResultado !== null) {
         res.status(200).send(autorResultado);
       } else {
-        res.status(404).send({ message: "Id do Autor não localizado." });
+        next(new NaoEncontrado("ID do Autor não localizado."));
       }
 
     } catch (error) {
-      if (error instanceof mongoose.Error.CastError) {
-        res.status(400).send({ message: "Um ou mais dados fornecidos estão incorretos." });
-      } else {
-        res.status(500).send({ message: `${error.message} - Erro interno de servidor.` });
-      }
+      next(error);
     }
   };
 
 
-  static cadastrarAutor = async (req, res) => {
+  static cadastrarAutor = async (req, res, next) => {
     try {
       let autor = new autores(req.body);
 
@@ -45,32 +41,41 @@ class AutorController {
 
       res.status(201).send(autorResultado.toJSON());
     } catch (error) {
-      res.status(500).send({ message: `${error.message} - falha ao cadastrar Autor.` });
+      next(error);
     }
   };
 
 
-  static atualizarAutor = async (req, res) => {
+  static atualizarAutor = async (req, res, next) => {
     try {
       const id = req.params.id;
 
-      await autores.findByIdAndUpdate(id, { $set: req.body });
+      const autorResultado = await autores.findByIdAndUpdate(id, { $set: req.body });
 
-      res.status(200).send({ message: "Autor atualizado com sucesso" });
+      if (autorResultado !== null) {
+        res.status(200).send({ message: "Autor atualizado com sucesso" });
+      } else {
+        next(new NaoEncontrado("ID do autor não localizado."));
+      }
     } catch (error) {
-      res.status(500).send({ message: error.message });
+      next(error);
     }
   };
 
-  static excluirAutor = async (req, res) => {
+  static excluirAutor = async (req, res, next) => {
     try {
       const id = req.params.id;
 
-      await autores.findByIdAndDelete(id);
+      const autorResultado = await autores.findByIdAndDelete(id);
 
-      res.status(200).send({ message: "Autor removido com sucesso" });
+      if (autorResultado !== null) {
+        res.status(200).send({ message: "Autor removido com sucesso" });
+      } else {
+        next(new NaoEncontrado("ID do autor não localizado."));
+      }
+
     } catch (error) {
-      res.status(500).send({ message: error.message });
+      next(error);
     }
   };
 
